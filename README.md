@@ -17,7 +17,7 @@ Full video: https://github.com/ArchiusVuong-sudo/agent-session-review/releases/d
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
   ui["Next.js UI: queue, review page, export"] -->|"Fetch and NDJSON stream"| api["API routes"]
   api --> db[("SQLite: tasks, turns, interrupts, checks, findings, reviews")]
   api --> check["Check service"]

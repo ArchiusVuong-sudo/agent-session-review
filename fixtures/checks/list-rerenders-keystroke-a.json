@@ -1,0 +1,76 @@
+{
+  "sessionId": "list-rerenders-keystroke-a",
+  "recordedAt": "2026-10-11T06:29:28.597Z",
+  "model": "claude-opus-5-5",
+  "events": [
+    {
+      "atMs": 2837,
+      "name": "list_turns",
+      "args": {},
+      "ms": 0.2
+    },
+    {
+      "atMs": 5047,
+      "name": "get_turn",
+      "args": {
+        "id": "t5"
+      },
+      "ms": 0.2
+    },
+    {
+      "atMs": 5052,
+      "name": "get_turn",
+      "args": {
+        "id": "t3"
+      },
+      "ms": 0.2
+    },
+    {
+      "atMs": 5192,
+      "name": "get_turn",
+      "args": {
+        "id": "t4"
+      },
+      "ms": 0.2
+    }
+  ],
+  "raw": {
+    "findings": [
+      {
+        "claim": "it creates a fresh `sort={{ by: \"lastPracticed\" }}` object and a fresh `onSelect` arrow (t3)",
+        "topic": "root_cause",
+        "verdict": "supported",
+        "evidence": [
+          "t3"
+        ],
+        "reason": "PracticePage.tsx passes an inline sort object literal and an inline arrow for onSelect to PieceList, so both are new on each render."
+      },
+      {
+        "claim": "Each keystroke calls setNotes, PracticePage renders again",
+        "topic": "root_cause",
+        "verdict": "supported",
+        "evidence": [
+          "t3"
+        ],
+        "reason": "The textarea's onChange calls setNotes, and notes is state held in PracticePage, so each keystroke re-renders the page."
+      },
+      {
+        "claim": "the useMemo inside PieceList (t4) re-sorts the list as well",
+        "topic": "root_cause",
+        "verdict": "supported",
+        "evidence": [
+          "t4"
+        ],
+        "reason": "PieceList.tsx wraps the component in memo and has useMemo depend on [pieces, sort], so a new sort object every render makes the sort run again."
+      }
+    ]
+  },
+  "stats": {
+    "model": "claude-opus-5-5",
+    "durationMs": 9298,
+    "inputTokens": 10013,
+    "outputTokens": 658,
+    "costUsd": 0.0297847,
+    "numTurns": 6
+  }
+}

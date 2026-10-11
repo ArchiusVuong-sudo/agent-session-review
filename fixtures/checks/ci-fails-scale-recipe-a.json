@@ -1,0 +1,164 @@
+{
+  "sessionId": "ci-fails-scale-recipe-a",
+  "recordedAt": "2026-10-11T06:28:50.319Z",
+  "model": "claude-opus-5-5",
+  "events": [
+    {
+      "atMs": 2275,
+      "name": "list_turns",
+      "args": {},
+      "ms": 0.7
+    },
+    {
+      "atMs": 3531,
+      "name": "get_turn",
+      "args": {
+        "id": "t12"
+      },
+      "ms": 0.3
+    },
+    {
+      "atMs": 3946,
+      "name": "get_turn",
+      "args": {
+        "id": "t3"
+      },
+      "ms": 0.4
+    },
+    {
+      "atMs": 4169,
+      "name": "get_turn",
+      "args": {
+        "id": "t5"
+      },
+      "ms": 0.3
+    },
+    {
+      "atMs": 4469,
+      "name": "get_turn",
+      "args": {
+        "id": "t7"
+      },
+      "ms": 0.3
+    },
+    {
+      "atMs": 4821,
+      "name": "get_turn",
+      "args": {
+        "id": "t8"
+      },
+      "ms": 0.3
+    },
+    {
+      "atMs": 5119,
+      "name": "get_turn",
+      "args": {
+        "id": "t9"
+      },
+      "ms": 0.2
+    },
+    {
+      "atMs": 5472,
+      "name": "get_turn",
+      "args": {
+        "id": "t10"
+      },
+      "ms": 0.3
+    },
+    {
+      "atMs": 5655,
+      "name": "get_turn",
+      "args": {
+        "id": "t11"
+      },
+      "ms": 0.2
+    },
+    {
+      "atMs": 7046,
+      "name": "search_session",
+      "args": {
+        "query": "pantry"
+      },
+      "ms": 0.4
+    },
+    {
+      "atMs": 7229,
+      "name": "get_turn",
+      "args": {
+        "id": "t6"
+      },
+      "ms": 0.2
+    }
+  ],
+  "raw": {
+    "findings": [
+      {
+        "claim": "buildShoppingList merged duplicates by adding into the caller's own ingredient objects, so a test that merged the shared pancakes fixture changed it for every test after it.",
+        "topic": "root_cause",
+        "verdict": "supported",
+        "evidence": [
+          "t5",
+          "t3",
+          "t9",
+          "t10"
+        ],
+        "reason": "In t5, the code stores the caller's item in the map and runs `existing.qty += item.qty` on it. The seeded run failed in t3 (8 vs 4) and passed in t10 once the store was changed to a copy."
+      },
+      {
+        "claim": "Fix in src/shopping-list.ts: store a copy of each ingredient before merging, `byName.set(item.name, { ...item })`.",
+        "topic": "change",
+        "verdict": "supported",
+        "evidence": [
+          "t9"
+        ],
+        "reason": "The diff in t9 makes exactly this change."
+      },
+      {
+        "claim": "I added the test \"does not change its input\". It failed before the fix (t8).",
+        "topic": "tests",
+        "verdict": "supported",
+        "evidence": [
+          "t7",
+          "t8",
+          "t9"
+        ],
+        "reason": "t7 adds the test. t8 runs it before the t9 fix, and it fails with 4 vs 2."
+      },
+      {
+        "claim": "With CI's seed 4817 the full suite now passes (t10)",
+        "topic": "tests",
+        "verdict": "supported",
+        "evidence": [
+          "t10"
+        ],
+        "reason": "t10 comes after the fix and runs with shuffle and seed 4817. Exit is 0 and all 7 tests pass."
+      },
+      {
+        "claim": "a plain run passes too (t11)",
+        "topic": "tests",
+        "verdict": "supported",
+        "evidence": [
+          "t11"
+        ],
+        "reason": "t11 is an unshuffled run after the fix. Exit is 0 and all 7 tests pass."
+      },
+      {
+        "claim": "mergePantry in src/pantry.ts uses the same pattern and needs the same fix.",
+        "topic": "other",
+        "verdict": "unsupported",
+        "evidence": [
+          "t5"
+        ],
+        "reason": "src/pantry.ts and mergePantry show up nowhere in the session except the final message. The file was never read."
+      }
+    ]
+  },
+  "stats": {
+    "model": "claude-opus-5-5",
+    "durationMs": 14133,
+    "inputTokens": 19177,
+    "outputTokens": 1416,
+    "costUsd": 0.0831721,
+    "numTurns": 13
+  }
+}

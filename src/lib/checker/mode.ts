@@ -1,3 +1,4 @@
+import type { EnvSource } from "./env-source";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
@@ -5,7 +6,7 @@ import { join } from "node:path";
 import type { ProviderMode } from "../types";
 
 export interface ModeProbe {
-  env: NodeJS.ProcessEnv;
+  env: EnvSource;
   platform: NodeJS.Platform;
   /** True when the macOS keychain holds a Claude Code login. Never reads the secret. */
   keychainHasLogin: () => Promise<boolean>;

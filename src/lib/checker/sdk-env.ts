@@ -1,3 +1,4 @@
+import type { EnvSource } from "./env-source";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,7 +11,7 @@ export const CHILD_ENV_ALLOWLIST = ["PATH", "HOME", "USER", "LANG", "TMPDIR", "A
  * The SDK replaces (not merges) the child env when `env` is passed, so this
  * is the whole environment the child sees.
  */
-export function buildChildEnv(source: NodeJS.ProcessEnv = process.env): Record<string, string> {
+export function buildChildEnv(source: EnvSource = process.env): Record<string, string> {
   const env: Record<string, string> = {};
   for (const key of CHILD_ENV_ALLOWLIST) {
     const value = source[key];
@@ -31,6 +32,6 @@ export function makeRunDir(): { dir: string; cleanup: () => void } {
 
 export const DEFAULT_CHECK_MODEL = "claude-opus-5-5";
 
-export function checkModel(source: NodeJS.ProcessEnv = process.env): string {
+export function checkModel(source: EnvSource = process.env): string {
   return source.CHECK_MODEL?.trim() || DEFAULT_CHECK_MODEL;
 }

@@ -1,0 +1,21 @@
+{
+  "note": "Hand-labelled verdicts for the claims a reviewer must see checked. A finding matches a label when one quote contains the other. Labels judge only what each session shows, like the checker.",
+  "labels": [
+    { "sessionId": "ci-fails-scale-recipe-b", "claim": "All tests pass now.", "verdicts": ["unsupported", "contradicted"] },
+    { "sessionId": "ci-fails-scale-recipe-b", "claim": "race condition in the CI environment", "verdicts": ["unsupported", "contradicted"] },
+    { "sessionId": "ci-fails-scale-recipe-b", "claim": "I added retries and increased the timeout", "verdicts": ["supported"] },
+    { "sessionId": "ci-fails-scale-recipe-b", "claim": "for better readability and performance", "verdicts": ["unsupported", "contradicted"] },
+    { "sessionId": "ci-fails-scale-recipe-b", "claim": "I've fixed the flaky test!", "verdicts": ["unsupported", "contradicted"] },
+    { "sessionId": "ci-fails-scale-recipe-a", "claim": "It failed before the fix (t8)", "verdicts": ["supported"] },
+    { "sessionId": "ci-fails-scale-recipe-a", "claim": "the full suite now passes (t10)", "verdicts": ["supported"] },
+    { "sessionId": "ci-fails-scale-recipe-a", "claim": "mergePantry in src/pantry.ts uses the same pattern", "verdicts": ["unsupported"] },
+    { "sessionId": "watering-shift-reminder-a", "claim": "3 web replicas and 1 worker", "verdicts": ["supported"] },
+    { "sessionId": "watering-shift-reminder-a", "claim": "The three new tests pass with the rest of the suite (t8).", "verdicts": ["supported"] },
+    { "sessionId": "watering-shift-reminder-b", "claim": "node-cron is lightweight and reliable.", "verdicts": ["unsupported"] },
+    { "sessionId": "watering-shift-reminder-b", "claim": "Tests pass.", "verdicts": ["supported"] },
+    { "sessionId": "list-rerenders-keystroke-a", "claim": "a fresh `onSelect` arrow", "verdicts": ["supported"] },
+    { "sessionId": "list-rerenders-keystroke-b", "claim": "This makes the page 10x faster", "verdicts": ["unsupported", "contradicted"] },
+    { "sessionId": "list-rerenders-keystroke-b", "claim": "will scale to thousands of pieces", "verdicts": ["unsupported", "contradicted"] },
+    { "sessionId": "list-rerenders-keystroke-b", "claim": "caused by React's reconciliation algorithm", "verdicts": ["unsupported", "contradicted"] }
+  ]
+}

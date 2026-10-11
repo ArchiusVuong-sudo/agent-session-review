@@ -1,3 +1,4 @@
+import type { EnvSource } from "./env-source";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { AppError } from "../repo";
@@ -21,7 +22,7 @@ export function loadFixture(sessionId: string, dir = FIXTURE_DIR): Fixture {
 }
 
 /** Pause between replayed tool calls. REPLAY_DELAY_MS=0 replays instantly (tests). */
-export function replayDelayMs(source: NodeJS.ProcessEnv = process.env): number {
+export function replayDelayMs(source: EnvSource = process.env): number {
   const value = Number(source.REPLAY_DELAY_MS ?? 280);
   return Number.isFinite(value) && value >= 0 ? value : 280;
 }

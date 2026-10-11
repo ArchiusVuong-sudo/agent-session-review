@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  @apply bg-indigo-200;
+}
+
+@keyframes flash-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(99 102 241 / 0.55);
+    background-color: rgb(238 242 255);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgb(99 102 241 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(99 102 241 / 0);
+  }
+}
+
+.flash {
+  animation: flash-ring 1.4s ease-out 1;
+}
+
+@keyframes turn-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.turn-in {
+  animation: turn-in 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .turn-in {
+    animation: none;
+  }
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}

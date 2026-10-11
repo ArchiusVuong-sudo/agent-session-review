@@ -163,6 +163,16 @@ export function ReviewWorkspace({ data }: { data: ReviewPageData }) {
     });
   }
 
+  /** Hovering a claim in the transcript shows its finding card. */
+  const hoverFromTranscript = useCallback(
+    (id: number | null) => {
+      setHovered(id);
+      if (id === null || tab !== "check") return;
+      document.getElementById(`finding-${id}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    },
+    [tab],
+  );
+
   // ---------- check ----------
 
   async function runCheck() {
@@ -366,7 +376,7 @@ export function ReviewWorkspace({ data }: { data: ReviewPageData }) {
                     pinnedFindings={pinsByTurn.get(turn.id) ?? []}
                     interrupt={session.interrupt?.turnId === turn.id ? session.interrupt : null}
                     hoveredFinding={hovered}
-                    onHoverFinding={setHovered}
+                    onHoverFinding={hoverFromTranscript}
                     onClearInterrupt={locked ? undefined : clearInterrupt}
                     onInterruptHere={locked || session.interrupt ? undefined : () => openInterrupt(turn.id)}
                     isCurrent={turn.id === currentTurnId}

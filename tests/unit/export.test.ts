@@ -82,3 +82,15 @@ describe("export", () => {
     ]);
   });
 });
+
+describe("export preview inline spans", () => {
+  it("splits bold and code spans", async () => {
+    const { parseInline } = await import("@/lib/md/render");
+    expect(parseInline("**A much better** uses `retry: 3` here")).toEqual([
+      { text: "A much better", bold: true, code: false },
+      { text: " uses ", bold: false, code: false },
+      { text: "retry: 3", bold: false, code: true },
+      { text: " here", bold: false, code: false },
+    ]);
+  });
+});

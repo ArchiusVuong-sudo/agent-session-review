@@ -8,6 +8,16 @@ import type { DimensionId, ReviewDraft, SessionLabel } from "@/lib/types";
 type Level = 1 | 2 | 3 | 4 | 5;
 const LEVELS: Level[] = [1, 2, 3, 4, 5];
 const LABELS: SessionLabel[] = ["A", "B"];
+/** Two short lines per preference button; the full label shows below the row. */
+const PREF_SHORT: [string, string][] = [
+  ["A", "much"],
+  ["A", "better"],
+  ["A", "slightly"],
+  ["About", "same"],
+  ["B", "slightly"],
+  ["B", "better"],
+  ["B", "much"],
+];
 
 interface Props {
   rubric: Rubric;
@@ -66,7 +76,9 @@ function DimensionCard(props: {
           const value = props.draft.scores[label][dim.id];
           return (
             <div key={label} className="flex items-center gap-1.5">
-              <span className="text-[12px] font-medium text-slate-600">Agent {label}</span>
+              <span className="w-4 text-[12px] font-semibold text-slate-500" title={`Agent ${label}`}>
+                {label}
+              </span>
               <div className="flex gap-1" role="radiogroup" aria-label={`${dim.name}, Agent ${label}`}>
                 {LEVELS.map((level) => {
                   const on = value === level;
@@ -84,7 +96,7 @@ function DimensionCard(props: {
                       onFocus={() => setPeek(level)}
                       onBlur={() => setPeek(null)}
                       onClick={() => props.onScore(label, dim.id, level)}
-                      className={`h-7 w-8 rounded-md border text-[12.5px] font-semibold tabular-nums transition disabled:cursor-not-allowed ${
+                      className={`h-7 w-[30px] rounded-md border text-[12.5px] font-semibold tabular-nums transition disabled:cursor-not-allowed ${
                         on
                           ? scoreTone(level)
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-400 disabled:opacity-60"
@@ -172,18 +184,30 @@ export function RubricPanel(props: Props) {
                 type="button"
                 role="radio"
                 aria-checked={on}
+                aria-label={label}
+                title={label}
                 disabled={locked}
                 data-testid={`pref-${value}`}
                 onClick={() => props.onPreference(value)}
-                className={`rounded-md border px-1 py-1.5 text-[11px] font-medium leading-tight transition disabled:cursor-not-allowed ${
+                className={`flex flex-col items-center rounded-md border px-1 py-1.5 leading-tight transition disabled:cursor-not-allowed ${
                   on ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-200 text-slate-600 hover:border-slate-400 disabled:opacity-60"
                 }`}
               >
-                {label}
+                <span className="text-[12px] font-semibold">{PREF_SHORT[i]![0]}</span>
+                <span className={`text-[10.5px] ${on ? "text-indigo-100" : "text-slate-400"}`}>{PREF_SHORT[i]![1]}</span>
               </button>
             );
           })}
         </div>
+        <p className="mt-1.5 text-[12px] text-slate-500" data-testid="pref-label">
+          {draft.preference ? (
+            <>
+              Preference: <span className="font-semibold text-slate-800">{rubric.preference[draft.preference - 1]}</span>
+            </>
+          ) : (
+            "From A much better to B much better."
+          )}
+        </p>
         <label className="mt-3 block text-[12px] font-medium text-slate-700" htmlFor="rationale">
           Rationale
         </label>

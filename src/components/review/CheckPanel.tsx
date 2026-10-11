@@ -3,7 +3,7 @@
 import { testsFactAgreement } from "@/lib/facts";
 import type { Decision, Finding, ProviderMode, RunStats, TraceEvent } from "@/lib/types";
 import type { SessionView } from "@/lib/view";
-import { TOPIC_LABEL, VERDICT_STYLE, formatMs, formatTokens } from "./format";
+import { TOPIC_LABEL, VERDICT_STYLE, formatMs, formatTokens, inlineCode } from "./format";
 
 export interface CheckUiState {
   status: "idle" | "running" | "error";
@@ -87,6 +87,7 @@ function FindingCard(props: { finding: Finding; session: SessionView; locked: bo
   const agreement = finding.topic === "tests" ? testsFactAgreement(finding.verdict, props.session.facts) : null;
   return (
     <li
+      id={`finding-${finding.id}`}
       data-testid="finding"
       data-verdict={finding.verdict}
       data-decision={finding.decision ?? "none"}
@@ -112,7 +113,7 @@ function FindingCard(props: { finding: Finding; session: SessionView; locked: bo
       <blockquote className="mt-2 border-l-2 border-slate-300 pl-2 text-[13px] font-medium leading-5 text-slate-900">
         &ldquo;{finding.claim}&rdquo;
       </blockquote>
-      <p className="mt-1.5 text-[12.5px] leading-5 text-slate-600">{finding.reason}</p>
+      <p className="mt-1.5 text-[12.5px] leading-5 text-slate-600">{inlineCode(finding.reason, `r${finding.id}`)}</p>
       <div className="mt-2 flex items-center gap-1.5">
         <span className="text-[11px] text-slate-400">Evidence</span>
         {finding.evidence.map((id) => (
@@ -253,7 +254,7 @@ export function CheckPanel(props: Props) {
                 {check.dropped.map((d, i) => (
                   <li key={i}>
                     &ldquo;{d.claim}&rdquo; <span className="text-slate-400">({d.evidence.join(", ") || "no evidence"})</span>:{" "}
-                    {d.reason}
+                    {inlineCode(d.reason, `d${i}`)}
                   </li>
                 ))}
               </ul>

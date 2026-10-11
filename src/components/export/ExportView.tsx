@@ -7,7 +7,17 @@ import { parseInline, parseMarkdown, type Block } from "@/lib/md/render";
 function InlineText({ text }: { text: string }) {
   return (
     <>
-      {parseInline(text).map((part, i) => (part.bold ? <strong key={i}>{part.text}</strong> : <span key={i}>{part.text}</span>))}
+      {parseInline(text).map((part, i) =>
+        part.bold ? (
+          <strong key={i}>{part.text}</strong>
+        ) : part.code ? (
+          <code key={i} className="rounded bg-slate-100 px-1 py-px font-mono text-[0.85em] text-slate-800">
+            {part.text}
+          </code>
+        ) : (
+          <span key={i}>{part.text}</span>
+        ),
+      )}
     </>
   );
 }

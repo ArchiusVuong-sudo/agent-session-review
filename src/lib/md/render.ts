@@ -2,7 +2,7 @@
  * A small Markdown reader for the export preview. It covers only what
  * renderExport writes: headings, paragraphs, quotes, lists and pipe tables.
  */
-export type Inline = { text: string; bold: boolean };
+export type Inline = { text: string; bold: boolean; code: boolean };
 
 export type Block =
   | { kind: "heading"; level: 1 | 2 | 3; text: string }
@@ -53,10 +53,14 @@ export function parseMarkdown(md: string): Block[] {
   return blocks;
 }
 
-/** Splits **bold** spans out of a line. */
+/** Splits **bold** and `code` spans out of a line. */
 export function parseInline(text: string): Inline[] {
   return text
-    .split(/(\*\*[^*]+\*\*)/g)
+    .split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
     .filter(Boolean)
-    .map((part) => (part.startsWith("**") && part.endsWith("**") ? { text: part.slice(2, -2), bold: true } : { text: part, bold: false }));
+    .map((part) => {
+      if (part.length > 4 && part.startsWith("**") && part.endsWith("**")) return { text: part.slice(2, -2), bold: true, code: false };
+      if (part.length > 2 && part.startsWith("`") && part.endsWith("`")) return { text: part.slice(1, -1), bold: false, code: true };
+      return { text: part, bold: false, code: false };
+    });
 }

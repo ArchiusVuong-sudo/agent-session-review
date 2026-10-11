@@ -38,10 +38,12 @@ function DimensionCard(props: {
   const { dim } = props;
   const [peek, setPeek] = useState<Level | null>(null);
   return (
-    <section data-testid={`dim-${dim.id}`} className="rounded-xl border border-slate-200 bg-white p-3">
+    <section data-testid={`dim-${dim.id}`} className="relative rounded-xl border border-slate-200 bg-white p-3">
       <header className="flex items-baseline gap-2">
-        <h3 className="text-[13.5px] font-semibold text-slate-900">{dim.name}</h3>
-        <p className="truncate text-[12px] text-slate-500">{dim.question}</p>
+        <h3 className="shrink-0 whitespace-nowrap text-[13.5px] font-semibold text-slate-900">{dim.name}</h3>
+        <p className="min-w-0 truncate text-[12px] text-slate-500" title={dim.question}>
+          {dim.question}
+        </p>
       </header>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
@@ -59,12 +61,12 @@ function DimensionCard(props: {
         ))}
       </div>
 
-      <div className="mt-2.5 space-y-1.5">
+      <div className="mt-2.5 flex items-center justify-between gap-3">
         {LABELS.map((label) => {
           const value = props.draft.scores[label][dim.id];
           return (
-            <div key={label} className="flex items-center gap-2">
-              <span className="w-14 text-[12px] font-medium text-slate-600">Agent {label}</span>
+            <div key={label} className="flex items-center gap-1.5">
+              <span className="text-[12px] font-medium text-slate-600">Agent {label}</span>
               <div className="flex gap-1" role="radiogroup" aria-label={`${dim.name}, Agent ${label}`}>
                 {LEVELS.map((level) => {
                   const on = value === level;
@@ -97,19 +99,15 @@ function DimensionCard(props: {
           );
         })}
       </div>
-      <p
-        data-testid={`anchor-peek-${dim.id}`}
-        aria-live="polite"
-        className={`mt-1.5 min-h-[18px] text-[11.5px] leading-[1.45] ${peek ? "text-slate-700" : "text-slate-400"}`}
-      >
-        {peek ? (
-          <>
-            <span className="font-semibold">Level {peek}:</span> {dim.anchors[String(peek) as "1"]}
-          </>
-        ) : (
-          "Hover or focus a score to read its anchor."
-        )}
-      </p>
+      {peek && (
+        <p
+          data-testid={`anchor-peek-${dim.id}`}
+          role="tooltip"
+          className="pointer-events-none absolute inset-x-3 top-full z-20 -mt-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11.5px] leading-[1.45] text-slate-700 shadow-lg"
+        >
+          <span className="font-semibold">Level {peek}:</span> {dim.anchors[String(peek) as "1"]}
+        </p>
+      )}
     </section>
   );
 }

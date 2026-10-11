@@ -37,7 +37,17 @@ function Prose({ text }: { text: string }) {
   );
 }
 
-function Collapsible({ lines, limit, children }: { lines: number; limit: number; children: (open: boolean) => ReactNode }) {
+function Collapsible({
+  lines,
+  limit,
+  dark = false,
+  children,
+}: {
+  lines: number;
+  limit: number;
+  dark?: boolean;
+  children: (open: boolean) => ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const long = lines > limit;
   return (
@@ -47,7 +57,7 @@ function Collapsible({ lines, limit, children }: { lines: number; limit: number;
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="mt-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+          className={`mt-1 text-xs font-medium ${dark ? "text-sky-300 hover:text-sky-200" : "px-3 pb-1 text-indigo-600 hover:text-indigo-800"}`}
         >
           {open ? "Show less" : `Show all ${lines} lines`}
         </button>
@@ -57,7 +67,7 @@ function Collapsible({ lines, limit, children }: { lines: number; limit: number;
 }
 
 function CommandBody({ turn }: { turn: Extract<Turn, { kind: "command" }> }) {
-  const lines = turn.output.split("\n");
+  const lines = turn.output.replace(/^\s*\n/, "").split("\n");
   const ok = turn.exitCode === 0;
   return (
     <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
@@ -77,7 +87,7 @@ function CommandBody({ turn }: { turn: Extract<Turn, { kind: "command" }> }) {
       </div>
       {turn.output && (
         <div className="px-3 py-2">
-          <Collapsible lines={lines.length} limit={14}>
+          <Collapsible lines={lines.length} limit={14} dark>
             {(open) => (
               <pre className="scroll-thin overflow-x-auto font-mono text-[11.5px] leading-[1.55] text-slate-300">
                 {(open ? lines : lines.slice(0, 14)).join("\n")}

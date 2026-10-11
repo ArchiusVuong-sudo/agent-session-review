@@ -36,11 +36,11 @@ function BlockView({ block }: { block: Block }) {
       );
     case "table":
       return (
-        <table className="w-full max-w-md border-collapse text-[13px]">
+        <table className="w-full max-w-lg border-collapse text-[13px]">
           <thead>
             <tr>
               {block.head.map((h, i) => (
-                <th key={i} className={`border-b border-slate-300 py-1.5 font-semibold text-slate-700 ${i === 0 ? "text-left" : "text-center"}`}>
+                <th key={i} className={`border-b border-slate-300 py-1.5 font-semibold text-slate-700 ${i === 0 ? "text-left" : "w-20 text-center"}`}>
                   {h}
                 </th>
               ))}

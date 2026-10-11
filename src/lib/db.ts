@@ -119,7 +119,7 @@ export function seedIfEmpty(db: Db): void {
 }
 
 export function dataDir(): string {
-  return resolve(process.env.DATA_DIR ?? join(process.cwd(), ".data"));
+  return resolve(/*turbopackIgnore: true*/ process.env.DATA_DIR ?? join(process.cwd(), ".data"));
 }
 
 const globalForDb = globalThis as unknown as { __sessionReviewDb?: Db };

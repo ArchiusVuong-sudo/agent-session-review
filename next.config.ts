@@ -6,6 +6,7 @@ const config: NextConfig = {
   outputFileTracingIncludes: { "/**": ["./data/**/*", "./fixtures/**/*"] },
   poweredByHeader: false,
   devIndicators: false,
+  agentRules: false,
 };
 
 export default config;

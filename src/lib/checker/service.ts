@@ -1,5 +1,5 @@
 import type { Db } from "../db";
-import { AppError, completeCheck, createCheck, failCheck, findingsForCheck, getSession, latestCheck } from "../repo";
+import { AppError, assertSessionUnlocked, completeCheck, createCheck, failCheck, findingsForCheck, getCheck, getSession } from "../repo";
 import type { CheckRecord, Finding, ProviderMode, TraceEvent } from "../types";
 import { FakeProvider } from "./fake";
 import { LiveProvider } from "./live";
@@ -32,12 +32,20 @@ export async function runCheck(
   emit: (event: CheckStreamEvent) => void,
   options: { provider?: CheckProvider; signal?: AbortSignal } = {},
 ): Promise<void> {
-  const session = getSession(db, sessionId);
+  const session = assertSessionUnlocked(db, sessionId);
   if (running.has(sessionId)) throw new AppError(409, "A check is already running for this session.");
   running.add(sessionId);
 
-  let provider = options.provider ?? providerFor((await currentMode()).mode);
-  const checkId = createCheck(db, sessionId, provider.mode);
+  let provider: CheckProvider;
+  let checkId: number;
+  try {
+    provider = options.provider ?? providerFor((await currentMode()).mode);
+    // createCheck asserts the lock again: Submit may have landed during the await above.
+    checkId = createCheck(db, sessionId, provider.mode);
+  } catch (error) {
+    running.delete(sessionId);
+    throw error;
+  }
   const trace: TraceEvent[] = [];
   const onTrace = (event: TraceEvent) => {
     trace.push(event);
@@ -69,9 +77,7 @@ export async function runCheck(
       findings: grounded.kept,
       dropped: grounded.dropped,
     });
-    const check = latestCheck(db, sessionId);
-    if (!check) throw new Error("Check was not saved.");
-    emit({ type: "done", check, findings: findingsForCheck(db, check.id) });
+    emit({ type: "done", check: getCheck(db, checkId), findings: findingsForCheck(db, checkId) });
   } catch (error) {
     const message =
       error instanceof CheckOutputError || error instanceof AppError

@@ -161,7 +161,16 @@ export function CheckPanel(props: Props) {
   const check = session.check;
   const running = ui.status === "running";
   const findings = running ? [] : session.findings;
-  const trace = running || ui.status === "error" ? ui.trace : (check?.trace ?? []);
+  // A failed run (this visit, or the newest saved one) shows its error and trace next to the last done check's findings.
+  const failure = running
+    ? null
+    : ui.status === "error"
+      ? { error: ui.error, trace: ui.trace }
+      : session.failed
+        ? { error: session.failed.error, trace: session.failed.trace }
+        : null;
+  const trace = running ? ui.trace : failure ? failure.trace : (check?.trace ?? []);
+  const stats = running || failure ? null : (check?.stats ?? null);
   const counts = { supported: 0, unsupported: 0, contradicted: 0 };
   for (const f of findings) counts[f.verdict]++;
 
@@ -197,25 +206,32 @@ export function CheckPanel(props: Props) {
         </div>
       </div>
 
-      {trace.length > 0 && <TraceList trace={trace} running={running} stats={running ? null : (check?.stats ?? null)} />}
+      {trace.length > 0 && <TraceList trace={trace} running={running} stats={stats} />}
 
-      {ui.status === "error" && (
+      {failure && (
         <div role="alert" data-testid="check-error" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-[13px] text-rose-800">
           <div className="font-medium">The check did not finish</div>
-          <p className="mt-0.5">{ui.error}</p>
-          <button type="button" onClick={props.onRun} className="mt-2 text-[12px] font-medium text-rose-700 underline">
-            Try again
-          </button>
+          <p className="mt-0.5">{failure.error?.replace(/^The check did not finish:\s*/, "")}</p>
+          {check && (
+            <p className="mt-1 text-[12px] text-rose-700/80" data-testid="kept-findings-note">
+              The findings below are from the last check that finished, with your decisions kept.
+            </p>
+          )}
+          {!props.locked && (
+            <button type="button" onClick={props.onRun} className="mt-2 text-[12px] font-medium text-rose-700 underline">
+              Try again
+            </button>
+          )}
         </div>
       )}
 
-      {!running && !check && ui.status !== "error" && (
+      {!running && !check && !failure && (
         <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-500">
           No check yet for Agent {session.label}. Run one to see which claims the session backs.
         </div>
       )}
 
-      {!running && check && ui.status !== "error" && (
+      {!running && check && (
         <>
           <div className="flex items-center gap-3 text-[12px] text-slate-600" data-testid="finding-summary">
             <span className="font-medium text-slate-900">

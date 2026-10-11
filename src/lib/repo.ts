@@ -153,7 +153,7 @@ function toCheck(row: CheckRow): CheckRecord {
 }
 
 export function createCheck(db: Db, sessionId: string, mode: ProviderMode): number {
-  getSession(db, sessionId);
+  assertSessionUnlocked(db, sessionId);
   const info = db
     .prepare("INSERT INTO checks (session_id, mode, status, started_at) VALUES (?, ?, 'running', ?)")
     .run(sessionId, mode, new Date().toISOString());
@@ -177,11 +177,13 @@ export function completeCheck(
     | { sessionId: string }
     | undefined;
   if (!check) throw new AppError(404, `No check ${checkId}`);
+  const taskSlug = getSession(db, check.sessionId).taskSlug;
   const insert = db.prepare(
     `INSERT INTO findings (check_id, session_id, position, claim, topic, verdict, evidence, reason)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   db.transaction(() => {
+    assertUnlocked(db, taskSlug);
     result.findings.forEach((f, i) => {
       insert.run(checkId, check.sessionId, i, f.claim, f.topic, f.verdict, JSON.stringify(f.evidence), f.reason);
     });
@@ -199,12 +201,43 @@ export function failCheck(db: Db, checkId: number, error: string, trace: TraceEv
   db.prepare("UPDATE checks SET status = 'error', error = ?, trace = ? WHERE id = ?").run(error, JSON.stringify(trace), checkId);
 }
 
-/** The newest finished check for a session, if any. */
+export function getCheck(db: Db, checkId: number): CheckRecord {
+  const row = db.prepare(`SELECT ${CHECK_COLUMNS} FROM checks WHERE id = ?`).get(checkId) as CheckRow | undefined;
+  if (!row) throw new AppError(404, `No check ${checkId}`);
+  return toCheck(row);
+}
+
+/** The newest check for a session that is not running, done or failed. */
 export function latestCheck(db: Db, sessionId: string): CheckRecord | null {
   const row = db
     .prepare(`SELECT ${CHECK_COLUMNS} FROM checks WHERE session_id = ? AND status != 'running' ORDER BY id DESC LIMIT 1`)
     .get(sessionId) as CheckRow | undefined;
   return row ? toCheck(row) : null;
+}
+
+/** The newest check that finished with findings. A failed run never replaces it. */
+export function latestDoneCheck(db: Db, sessionId: string): CheckRecord | null {
+  const row = db
+    .prepare(`SELECT ${CHECK_COLUMNS} FROM checks WHERE session_id = ? AND status = 'done' ORDER BY id DESC LIMIT 1`)
+    .get(sessionId) as CheckRow | undefined;
+  return row ? toCheck(row) : null;
+}
+
+/** The newest check if it failed after the last done one, so the UI can show its error next to the old findings. */
+export function failedAfterDone(db: Db, sessionId: string): CheckRecord | null {
+  const check = latestCheck(db, sessionId);
+  return check?.status === "error" ? check : null;
+}
+
+/** True while any check for one of the task's sessions is running. */
+export function hasRunningCheck(db: Db, slug: string): boolean {
+  return (
+    db
+      .prepare(
+        "SELECT 1 FROM checks c JOIN sessions s ON s.id = c.session_id WHERE s.task_slug = ? AND c.status = 'running' LIMIT 1",
+      )
+      .get(slug) !== undefined
+  );
 }
 
 interface FindingRow {
@@ -238,9 +271,9 @@ export function setDecision(db: Db, findingId: number, decision: Decision): Find
   return { ...toFinding(row), decision };
 }
 
-/** Accepted findings from the latest check of a session. */
+/** Accepted findings from the newest done check of a session. */
 export function acceptedFindings(db: Db, sessionId: string): Finding[] {
-  const check = latestCheck(db, sessionId);
+  const check = latestDoneCheck(db, sessionId);
   return check ? findingsForCheck(db, check.id).filter((f) => f.decision === "accepted") : [];
 }
 
@@ -281,6 +314,13 @@ function assertUnlocked(db: Db, slug: string): void {
   if (getReview(db, slug).status === "submitted") throw new AppError(409, "This review is submitted and locked.");
 }
 
+/** Throws 409 when the session's task is submitted. Returns the session. */
+export function assertSessionUnlocked(db: Db, sessionId: string): SessionData {
+  const session = getSession(db, sessionId);
+  assertUnlocked(db, session.taskSlug);
+  return session;
+}
+
 export function saveDraft(db: Db, slug: string, draft: ReviewDraft): Review {
   getTask(db, slug);
   assertUnlocked(db, slug);
@@ -296,6 +336,7 @@ export function saveDraft(db: Db, slug: string, draft: ReviewDraft): Review {
 export function submitReview(db: Db, slug: string): Review {
   getTask(db, slug);
   assertUnlocked(db, slug);
+  if (hasRunningCheck(db, slug)) throw new AppError(409, "A claim check is still running. Submit when it finishes.");
   const review = getReview(db, slug);
   const missing = missingForSubmit(review);
   if (missing.length > 0) throw new AppError(422, `Still needed: ${missing.join(", ")}.`);

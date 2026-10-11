@@ -1,20 +1,22 @@
 import { runCheck, type CheckStreamEvent } from "@/lib/checker/service";
 import { getDb } from "@/lib/db";
 import { handle } from "@/lib/http";
-import { getSession } from "@/lib/repo";
+import { assertSessionUnlocked } from "@/lib/repo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * Runs the claim check and streams it as NDJSON: one trace event per tool
- * call, then a done (findings) or error line. Writes only checks and findings.
+ * call, then a done (findings) or error line. Writes only checks and findings,
+ * and answers 409 when the task's review is submitted.
  */
 export async function POST(request: Request, ctx: RouteContext<"/api/sessions/[id]/check">) {
   return handle(async () => {
     const { id } = await ctx.params;
     const db = getDb();
-    getSession(db, id);
+    // 404 or 409 as a plain JSON answer before the stream starts.
+    assertSessionUnlocked(db, id);
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {

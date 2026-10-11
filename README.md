@@ -39,7 +39,7 @@ flowchart LR
 
 ## How it works
 
-**Data.** Tasks, sessions and turns live in `data/*.json` and are checked with zod on load. On first run the app seeds a SQLite file under `.data/` (gitignored) with them. A turn is a tagged union (user, preamble, reasoning, command, read, edit, final), so the UI, the facts and the tools all switch on one `kind`. Interrupts, checks, findings and reviews are their own tables; a submitted review locks every write to its task.
+**Data.** Tasks, sessions and turns live in `data/*.json` and are checked with zod on load. On first run the app seeds a SQLite file under `.data/` (gitignored) with them. A turn is a tagged union (user, preamble, reasoning, command, read, edit, final), so the UI, the facts and the tools all switch on one `kind`. Interrupts, checks, findings and reviews are their own tables; a submitted review locks every write to its task, claim checks included (409), and Submit waits while a check runs. A failed check never replaces the last finished one: its error shows next to the old findings and their decisions.
 
 **Real command output.** Task 1's commands and diffs are not typed by hand. `scripts/capture-task1.ts` replays both sessions on a small Vitest repo in `fixture-repos/meal-planner` and records the real output, exit codes and diffs. The bug is real too: `buildShoppingList` adds into the caller's ingredient objects, so with `--sequence.shuffle --sequence.seed=4817` a shopping-list test doubles the shared fixture and `scaleRecipe` sees 4 eggs instead of 2.
 
@@ -94,7 +94,7 @@ npm start                    # http://127.0.0.1:4117
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `PORT` | `4117` | Port for `npm start` and `npm run dev` |
+| `PORT` | `4117` | Port for `npm start` and `npm run dev`; set it in the shell (`PORT=5000 npm start`), not in `.env.local` |
 | `CHECK_MODEL` | `claude-opus-5-5` | Model for live checks (`claude-sonnet-5-5` and `claude-haiku-5-5` also work) |
 | `DEMO_REPLAY` | unset | `1` forces replay mode |
 | `CHECKER` | unset | `fake` uses the scripted runner and shows a Test mode badge |

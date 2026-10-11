@@ -5,7 +5,7 @@ import { checkModel } from "@/lib/checker/sdk-env";
 import { loadRubric } from "@/lib/data/load";
 import { getDb } from "@/lib/db";
 import { computeFacts } from "@/lib/facts";
-import { AppError, findingsForCheck, getInterrupt, getReview, getTask, getTaskSessions, latestCheck } from "@/lib/repo";
+import { AppError, failedAfterDone, findingsForCheck, getInterrupt, getReview, getTask, getTaskSessions, latestDoneCheck } from "@/lib/repo";
 import type { ReviewPageData } from "@/lib/view";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ export default async function ReviewPage({ params }: PageProps<"/review/[slug]">
   const data: ReviewPageData = {
     task,
     sessions: getTaskSessions(db, slug).map((s) => {
-      const check = latestCheck(db, s.id);
+      const check = latestDoneCheck(db, s.id);
       return {
         id: s.id,
         label: s.label,
@@ -42,6 +42,7 @@ export default async function ReviewPage({ params }: PageProps<"/review/[slug]">
         interrupt: getInterrupt(db, s.id),
         check,
         findings: check ? findingsForCheck(db, check.id) : [],
+        failed: failedAfterDone(db, s.id),
       };
     }),
     review: getReview(db, slug),

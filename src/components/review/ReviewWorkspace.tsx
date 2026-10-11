@@ -52,6 +52,7 @@ export function ReviewWorkspace({ data }: { data: ReviewPageData }) {
   const visibleTurns = w.on ? session.turns.slice(0, w.visible) : session.turns;
   const currentTurnId = w.on ? (session.turns[w.visible - 1]?.id ?? null) : null;
   const missing = missingForSubmit(draft);
+  const checking = LABELS.some((l) => checkUi[l].status === "running");
 
   const showError = useCallback((error: unknown) => {
     setToast(error instanceof ApiError ? error.message : "Something went wrong. Try again.");
@@ -185,7 +186,7 @@ export function ReviewWorkspace({ data }: { data: ReviewPageData }) {
         if (event.type === "trace") {
           setCheckUi((all) => ({ ...all, [label]: { ...all[label], trace: [...all[label].trace, event.event] } }));
         } else if (event.type === "done") {
-          patchSession(label, (s) => ({ ...s, check: event.check, findings: event.findings }));
+          patchSession(label, (s) => ({ ...s, check: event.check, findings: event.findings, failed: null }));
           setCheckUi((all) => ({ ...all, [label]: idleCheck }));
         } else {
           setCheckUi((all) => ({ ...all, [label]: { ...all[label], status: "error", error: event.message } }));
@@ -453,6 +454,7 @@ export function ReviewWorkspace({ data }: { data: ReviewPageData }) {
                 missing={missing}
                 saving={saving}
                 submitting={submitting}
+                checking={checking}
                 onScore={(label: SessionLabel, dim: DimensionId, score: number) =>
                   updateDraft((d) => ({ ...d, scores: { ...d.scores, [label]: { ...d.scores[label], [dim]: score } } }))
                 }

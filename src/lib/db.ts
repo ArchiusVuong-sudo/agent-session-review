@@ -74,6 +74,10 @@ export function openDb(file: string): Db {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA);
+  // A check still marked running at open belongs to a server that stopped mid-run.
+  db.prepare("UPDATE checks SET status = 'error', error = ? WHERE status = 'running'").run(
+    "The server stopped before this check finished.",
+  );
   seedIfEmpty(db);
   return db;
 }

@@ -26,6 +26,8 @@ interface Props {
   missing: string[];
   saving: "idle" | "saving" | "saved" | "error";
   submitting: boolean;
+  /** A claim check is running: Submit waits for it, as the server would refuse. */
+  checking: boolean;
   onScore: (label: SessionLabel, dim: DimensionId, score: number) => void;
   onPreference: (value: number) => void;
   onRationale: (text: string) => void;
@@ -260,14 +262,18 @@ export function RubricPanel(props: Props) {
             <button
               type="button"
               data-testid="submit"
-              disabled={props.missing.length > 0 || props.submitting}
+              disabled={props.missing.length > 0 || props.submitting || props.checking}
               onClick={props.onSubmit}
               className="inline-flex h-9 items-center rounded-md bg-slate-900 px-4 text-[13px] font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {props.submitting ? "Submitting…" : "Submit review"}
             </button>
             <span className="min-w-0 flex-1 text-[12px] text-slate-500" data-testid="submit-missing">
-              {props.missing.length > 0 ? `Still needed: ${props.missing.join(", ")}.` : "Ready to submit. It locks the review."}
+              {props.missing.length > 0
+                ? `Still needed: ${props.missing.join(", ")}.`
+                : props.checking
+                  ? "A claim check is running. Submit when it finishes."
+                  : "Ready to submit. It locks the review."}
             </span>
             <span className="shrink-0 text-[11.5px] text-slate-400" data-testid="save-state">
               {props.saving === "saving" ? "Saving…" : props.saving === "saved" ? "Draft saved" : props.saving === "error" ? "Not saved" : ""}

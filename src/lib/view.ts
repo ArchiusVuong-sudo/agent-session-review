@@ -9,8 +9,11 @@ export interface SessionView {
   turns: Turn[];
   facts: SessionFacts;
   interrupt: Interrupt | null;
+  /** The newest done check and its findings. A failed run never replaces them. */
   check: CheckRecord | null;
   findings: Finding[];
+  /** The newest run, when it failed after `check`: its error shows next to the old findings. */
+  failed: CheckRecord | null;
 }
 
 export interface ReviewPageData {

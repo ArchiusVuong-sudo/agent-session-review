@@ -54,6 +54,20 @@ describe("check route", () => {
     expect(notJson.status).toBe(400);
   });
 
+  it("answers 409 on a submitted review and writes no check or finding", async () => {
+    const { POST } = await import("@/app/api/sessions/[id]/check/route");
+    const { getDb } = await import("@/lib/db");
+    const rows = () => ({
+      checks: getDb().prepare("SELECT * FROM checks ORDER BY id").all(),
+      findings: getDb().prepare("SELECT * FROM findings ORDER BY id").all(),
+    });
+    const before = rows();
+    const res = await POST(new Request("http://x", { method: "POST" }), ctx({ id: "watering-shift-reminder-b" }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "This review is submitted and locked." });
+    expect(rows()).toEqual(before);
+  });
+
   it("export answers 409 before submit", async () => {
     const { GET } = await import("@/app/api/reviews/[slug]/export/route");
     const res = await GET(new Request("http://x/api/reviews/list-rerenders-keystroke/export"), ctx({ slug: "list-rerenders-keystroke" }));

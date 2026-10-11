@@ -78,7 +78,7 @@ The labels were written after the first runs, so read this as a regression check
 
 ## Run it
 
-Needs Node 20 or newer.
+Needs Node 22.12 or newer.
 
 ```bash
 npm ci
@@ -111,7 +111,7 @@ npm run build && npm run test:e2e   # end to end on the production build
 LIVE=1 npm run test:live     # opt-in live check on the real SDK
 ```
 
-- Unit tests (94) cover the facts strip, the feedback lint, the grounding validator (misquoted claims and a finding citing t99 are dropped with their reasons), the three session tools and their input schemas, the SDK options and child env allowlist, retry and backoff, mode detection, the repository rules (one interrupt per session, Submit needs all 12 scores, a preference and a rationale, locking after submit), the Markdown export, the eval scoring and the check route, including that it never writes scores or feedback.
+- Unit tests (103) cover the facts strip, the feedback lint, the grounding validator (misquoted claims and a finding citing t99 are dropped with their reasons), the three session tools and their input schemas, the SDK options and child env allowlist, retry and backoff, mode detection, the repository rules (one interrupt per session, Submit needs all 12 scores, a preference and a rationale, locking after submit), the Markdown export, the eval scoring and the check route, including that it never writes scores or feedback.
 - The end-to-end test runs in replay mode at 1440x900: queue, facts strip, Watch and an interrupt on t4 that survives a reload, the claim check with its trace and highlights, accepting and rejecting findings, the rubric and lint, Submit, the queue badge and the export with its download. It uses the installed Chrome; set `PW_CHANNEL=chromium` after `npx playwright install chromium` if Chrome is missing.
 
 ## Notes

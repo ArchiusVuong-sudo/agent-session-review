@@ -1,0 +1,18 @@
+{
+  "note": "Example review for the demo, written by hand. Synthetic, like the sessions it scores.",
+  "reviews": [
+    {
+      "taskSlug": "watering-shift-reminder",
+      "scores": {
+        "A": { "makes_sense": 5, "reasoning": 4, "judgment": 5, "guiding": 4, "trust": 5, "overall": 5 },
+        "B": { "makes_sense": 3, "reasoning": 2, "judgment": 1, "guiding": 3, "trust": 2, "overall": 2 }
+      },
+      "preference": 1,
+      "rationale": "A checks how the app runs before choosing where the job goes (t3: 3 web replicas, 1 worker) and reuses the existing queue (t4). B schedules inside the web server (t4), so each replica sends its own copy, at server time, and nothing tests the new job (t6). A much better.",
+      "feedback": {
+        "A": "A names the two questions that decide the design (t2) and answers them from the repo: 3 web replicas and 1 worker (t3), an existing BullMQ queue (t4). The job runs on the worker at 18:00 garden time, and the reminder_sent_at stamp (t5, t6) makes a second run harmless. The tests cover the cases that matter (t7). One gap: a shift booked after 18:00 for the next morning never gets a reminder. It should name that case or send a reminder at booking time.",
+        "B": "B answers the request but not the system it runs in. The cron schedule sits in the web server start (t4), and this app runs 3 web replicas, so each member gets three emails. '0 18 * * *' fires at server time, not the garden's. It adds node-cron (t3) with no reason given when the repo already has a job queue, and the query in t5 also emails cancelled shifts. 'Tests pass' (t7) is true but says little: t6 runs the old suite and no test covers the new job. Instead, it should read the deploy config and existing jobs first, schedule on the worker and test one email per shift."
+      }
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "dimensions": [
+    {
+      "id": "makes_sense",
+      "name": "Makes sense",
+      "question": "Does the response solve the problem the user has?",
+      "anchors": {
+        "1": "Solves a different problem, or the change would make things worse.",
+        "2": "Answers a nearby question: treats the symptom and misses the cause the session itself shows.",
+        "3": "Solves the stated problem but leaves an obvious part of it open, or scopes wider than asked.",
+        "4": "Solves the problem the user has, scoped to the ask, assumptions stated.",
+        "5": "Solves the real problem and spots the next one the user would hit, without widening the change."
+      }
+    },
+    {
+      "id": "reasoning",
+      "name": "Preamble and reasoning",
+      "question": "Do the preamble and reasoning help, or just fill space?",
+      "anchors": {
+        "1": "No reasoning, or reasoning that contradicts what the session then does.",
+        "2": "Restates the prompt or lists generic causes; says nothing about this codebase.",
+        "3": "Names a plausible cause but does not say how it will check it.",
+        "4": "States a hypothesis and how it will test it; each step's reason fits in a line.",
+        "5": "A sharp hypothesis drawn from the evidence, tested in the cheapest order, updated when a step disagrees."
+      }
+    },
+    {
+      "id": "judgment",
+      "name": "Engineering judgment",
+      "question": "Would a strong engineer make the same moves?",
+      "anchors": {
+        "1": "Makes a risky or destructive change without checking.",
+        "2": "Reaches for retries, rewrites or new dependencies before finding the cause.",
+        "3": "Finds the cause but fixes it in a heavier or riskier way than needed.",
+        "4": "Reproduces first, makes the smallest change that fixes the cause, names the tradeoff.",
+        "5": "Fixes the cause where it lives, proves it with a test that failed first, and checks how it runs in production."
+      }
+    },
+    {
+      "id": "guiding",
+      "name": "Guiding vs dumping",
+      "question": "Does it guide the user, or just dump output?",
+      "anchors": {
+        "1": "A wall of output the user has to reverse-engineer.",
+        "2": "Dumps code or text with no order; the user works out what matters.",
+        "3": "In order, but buries the answer or leaves the next step unclear.",
+        "4": "Leads with the answer, explains why in a sentence or two, hands the next decision back.",
+        "5": "Answer first, then just enough why, then the one decision only the user can make."
+      }
+    },
+    {
+      "id": "trust",
+      "name": "Trust",
+      "question": "Would this interaction build or erode trust?",
+      "anchors": {
+        "1": "States results that the session contradicts.",
+        "2": "Claims results the session does not show, or hides a skipped step.",
+        "3": "Mostly backed, with one or two loose claims the user would have to check.",
+        "4": "Every claim is backed by a step in the session; says what it did not check.",
+        "5": "Every claim is backed and cited, and it flags its own uncertainty before the user has to ask."
+      }
+    },
+    {
+      "id": "overall",
+      "name": "Overall",
+      "question": "Does it feel right to a senior engineer?",
+      "anchors": {
+        "1": "A senior engineer would revert it and stop using the agent for this kind of task.",
+        "2": "A senior engineer would redo it or not merge it.",
+        "3": "Mergeable after a real review round with changes.",
+        "4": "A senior engineer would merge it with small comments.",
+        "5": "A senior engineer would merge it as is and point others to it as the way to do it."
+      }
+    }
+  ],
+  "preference": [
+    "A much better",
+    "A better",
+    "A slightly better",
+    "About the same",
+    "B slightly better",
+    "B better",
+    "B much better"
+  ]
+}

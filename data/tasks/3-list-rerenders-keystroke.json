@@ -1,0 +1,63 @@
+{
+  "slug": "list-rerenders-keystroke",
+  "title": "List re-renders on every keystroke",
+  "repo": "practice-log",
+  "stack": "React, TypeScript",
+  "summary": "A memoized list still renders while the user types in a sibling text box.",
+  "sessions": [
+    {
+      "id": "list-rerenders-keystroke-a",
+      "label": "A",
+      "turns": [
+        {
+          "id": "t1",
+          "kind": "user",
+          "text": "Typing in the notes box on the practice page lags. The React DevTools Profiler shows PieceList rendering on every keystroke, even though it is wrapped in memo. Why, and what should I change?"
+        },
+        {
+          "id": "t2",
+          "kind": "preamble",
+          "text": "memo only skips a render when every prop is the same as last time, so if PieceList still renders on each keystroke, some prop gets a new identity each time the page renders. I'll read what the page passes to it."
+        },
+        {
+          "id": "t3",
+          "kind": "read",
+          "path": "src/PracticePage.tsx",
+          "excerpt": "export function PracticePage({ pieces }: { pieces: Piece[] }) {\n  const [notes, setNotes] = useState(\"\");\n  const [selectedId, setSelectedId] = useState<string | null>(null);\n\n  return (\n    <main>\n      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />\n      <PieceList\n        pieces={pieces}\n        sort={{ by: \"lastPracticed\" }}\n        onSelect={(id) => setSelectedId(id)}\n      />\n      {selectedId && <PieceDetail id={selectedId} />}\n    </main>\n  );\n}"
+        },
+        {
+          "id": "t4",
+          "kind": "read",
+          "path": "src/PieceList.tsx",
+          "excerpt": "export const PieceList = memo(function PieceList({ pieces, sort, onSelect }: PieceListProps) {\n  const sorted = useMemo(() => sortPieces(pieces, sort), [pieces, sort]);\n  return (\n    <ul>\n      {sorted.map((piece) => (\n        <PieceRow key={piece.id} piece={piece} onSelect={onSelect} />\n      ))}\n    </ul>\n  );\n});"
+        },
+        {
+          "id": "t5",
+          "kind": "final",
+          "text": "PieceList renders on every keystroke because two of its props are new on every render of the page. Each keystroke calls setNotes, PracticePage renders again, and it creates a fresh `sort={{ by: \"lastPracticed\" }}` object and a fresh `onSelect` arrow (t3). memo compares each prop with Object.is, so both count as changed, and the useMemo inside PieceList (t4) re-sorts the list as well.\n\nThe fix I'd pick is to move the notes box and its state into its own component, so typing only renders that component:\n\n```diff\n+function NotesBox() {\n+  const [notes, setNotes] = useState(\"\");\n+  return <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />;\n+}\n+\n export function PracticePage({ pieces }: { pieces: Piece[] }) {\n-  const [notes, setNotes] = useState(\"\");\n   const [selectedId, setSelectedId] = useState<string | null>(null);\n@@\n-      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />\n+      <NotesBox />\n```\n\nThe other way is to keep the state where it is, move the sort object to a module constant and wrap onSelect in useCallback. That works too, but the next inline prop someone adds breaks it again.\n\nTo confirm, turn on \"Highlight updates when components render.\" in the React DevTools settings and type in the box: only the notes box should flash.\n\nWant me to apply the first fix?"
+        }
+      ]
+    },
+    {
+      "id": "list-rerenders-keystroke-b",
+      "label": "B",
+      "turns": [
+        {
+          "id": "t1",
+          "kind": "user",
+          "text": "Typing in the notes box on the practice page lags. The React DevTools Profiler shows PieceList rendering on every keystroke, even though it is wrapped in memo. Why, and what should I change?"
+        },
+        {
+          "id": "t2",
+          "kind": "preamble",
+          "text": "Great question! Performance issues like this are very common in React apps. Let me give you a complete, optimized solution."
+        },
+        {
+          "id": "t3",
+          "kind": "final",
+          "text": "Here is an optimized version of your practice page. The lag is caused by React's reconciliation algorithm re-diffing the whole tree on every keystroke, so the solution is to memoize everything and virtualize the list.\n\n```tsx\nimport React, { memo, useCallback, useMemo, useReducer, useRef } from \"react\";\nimport { FixedSizeList } from \"react-window\";\n\ntype State = {\n  notes: string;\n  selectedId: string | null;\n  sortBy: \"lastPracticed\" | \"title\";\n};\n\ntype Action =\n  | { type: \"setNotes\"; notes: string }\n  | { type: \"select\"; id: string | null }\n  | { type: \"sort\"; by: State[\"sortBy\"] };\n\nfunction reducer(state: State, action: Action): State {\n  switch (action.type) {\n    case \"setNotes\":\n      return { ...state, notes: action.notes };\n    case \"select\":\n      return { ...state, selectedId: action.id };\n    case \"sort\":\n      return { ...state, sortBy: action.by };\n    default:\n      return state;\n  }\n}\n\nconst Row = memo(function Row({\n  index,\n  style,\n  data,\n}: {\n  index: number;\n  style: React.CSSProperties;\n  data: { pieces: Piece[]; onSelect: (id: string) => void };\n}) {\n  const piece = data.pieces[index];\n  const handleClick = useCallback(() => data.onSelect(piece.id), [data, piece.id]);\n  return (\n    <div style={style} onClick={handleClick}>\n      {piece.title}\n    </div>\n  );\n});\n\nconst MemoPieceList = memo(function MemoPieceList({\n  pieces,\n  sortBy,\n  onSelect,\n}: {\n  pieces: Piece[];\n  sortBy: State[\"sortBy\"];\n  onSelect: (id: string) => void;\n}) {\n  const sorted = useMemo(() => sortPieces(pieces, { by: sortBy }), [pieces, sortBy]);\n  const itemData = useMemo(() => ({ pieces: sorted, onSelect }), [sorted, onSelect]);\n  return (\n    <FixedSizeList height={480} width=\"100%\" itemCount={sorted.length} itemSize={44} itemData={itemData}>\n      {Row}\n    </FixedSizeList>\n  );\n});\n\nconst MemoNotes = memo(function MemoNotes({\n  value,\n  onChange,\n}: {\n  value: string;\n  onChange: (value: string) => void;\n}) {\n  const handleChange = useCallback(\n    (e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value),\n    [onChange],\n  );\n  return <textarea value={value} onChange={handleChange} />;\n});\n\nexport function PracticePage({ pieces }: { pieces: Piece[] }) {\n  const [state, dispatch] = useReducer(reducer, {\n    notes: \"\",\n    selectedId: null,\n    sortBy: \"lastPracticed\",\n  });\n  const renders = useRef(0);\n  renders.current += 1;\n\n  const memoPieces = useMemo(() => pieces, [pieces]);\n  const handleNotes = useCallback((notes: string) => dispatch({ type: \"setNotes\", notes }), []);\n  const handleSelect = useCallback((id: string) => dispatch({ type: \"select\", id }), []);\n  const selected = useMemo(() => state.selectedId, [state.selectedId]);\n\n  return (\n    <main>\n      <MemoNotes value={state.notes} onChange={handleNotes} />\n      <MemoPieceList pieces={memoPieces} sortBy={state.sortBy} onSelect={handleSelect} />\n      {selected && <PieceDetail id={selected} />}\n    </main>\n  );\n}\n```\n\nThis makes the page 10x faster and will scale to thousands of pieces. For a bigger app, you should also consider moving this state into Redux so components only subscribe to what they need."
+        }
+      ]
+    }
+  ]
+}

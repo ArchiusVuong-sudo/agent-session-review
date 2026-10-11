@@ -1,0 +1,54 @@
+{
+  "note": "Real output from scripts/capture-task1.ts on fixture-repos/meal-planner.",
+  "seed": "4817",
+  "a": {
+    "t3": {
+      "command": "npx vitest run --sequence.shuffle --sequence.seed=4817",
+      "exitCode": 1,
+      "output": "\n RUN  v5.0.3 ~/meal-planner\n      Running tests with seed \"4817\"\n\n ❯ test/meal-plan.test.ts (4 tests | 1 failed) 5ms\n   ❯ scaleRecipe (2)\n     × scales pancakes to 4 servings 3ms\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  test/meal-plan.test.ts > scaleRecipe > scales pancakes to 4 servings\nAssertionError: expected 8 to be 4 // Object.is equality\n\n- Expected\n+ Received\n\n- 4\n+ 8\n\n ❯ test/meal-plan.test.ts:12:47\n     10|   it(\"scales pancakes to 4 servings\", () => {\n     11|     const scaled = scaleRecipe(pancakes, 4);\n     12|     expect(qtyOf(scaled.ingredients, \"eggs\")).toBe(4);\n       |                                               ^\n     13|     expect(qtyOf(scaled.ingredients, \"flour\")).toBe(400);\n     14|   });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 5 passed (6)\n   Start at  13:27:57\n   Duration  116ms (transform 63%, import 21%, tests 10%, worker 6%)"
+    },
+    "t4": {
+      "command": "npx vitest run",
+      "exitCode": 0,
+      "output": "\n RUN  v5.0.3 ~/meal-planner\n\n Test Files  2 passed (2)\n      Tests  6 passed (6)\n   Start at  13:27:58\n   Duration  98ms (transform 62%, import 22%, worker 8%, tests 7%)"
+    },
+    "t7": {
+      "path": "test/meal-plan.test.ts",
+      "diff": "@@ -25,4 +25,10 @@ describe(\"buildShoppingList\", () => {\n   });\n \n+  it(\"does not change its input\", () => {\n+    const toast = { name: \"toast\", servings: 1, ingredients: [{ name: \"bread\", qty: 2, unit: \"slice\" }] };\n+    buildShoppingList([toast, toast]);\n+    expect(toast.ingredients[0]?.qty).toBe(2);\n+  });\n+\n   it(\"keeps ingredients that appear once\", () => {\n     const list = buildShoppingList([omelette]);"
+    },
+    "t8": {
+      "command": "npx vitest run -t \"does not change its input\"",
+      "exitCode": 1,
+      "output": "\n RUN  v5.0.3 ~/meal-planner\n\n ❯ test/meal-plan.test.ts (5 tests | 1 failed | 4 skipped) 6ms\n   ❯ buildShoppingList (3)\n     × does not change its input 5ms\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  test/meal-plan.test.ts > buildShoppingList > does not change its input\nAssertionError: expected 4 to be 2 // Object.is equality\n\n- Expected\n+ Received\n\n- 2\n+ 4\n\n ❯ test/meal-plan.test.ts:30:39\n     28|     const toast = { name: \"toast\", servings: 1, ingredients: [{ name: …\n     29|     buildShoppingList([toast, toast]);\n     30|     expect(toast.ingredients[0]?.qty).toBe(2);\n       |                                       ^\n     31|   });\n     32|\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n Test Files  1 failed | 1 skipped (2)\n      Tests  1 failed | 6 skipped (7)\n   Start at  13:27:58\n   Duration  129ms (transform 60%, import 25%, tests 8%, worker 7%)"
+    },
+    "t9": {
+      "path": "src/shopping-list.ts",
+      "diff": "@@ -9,5 +9,5 @@ export function buildShoppingList(recipes: Recipe[]): Ingredient[] {\n         existing.qty += item.qty;\n       } else {\n-        byName.set(item.name, item);\n+        byName.set(item.name, { ...item });\n       }\n     }"
+    },
+    "t10": {
+      "command": "npx vitest run --sequence.shuffle --sequence.seed=4817",
+      "exitCode": 0,
+      "output": "\n RUN  v5.0.3 ~/meal-planner\n      Running tests with seed \"4817\"\n\n Test Files  2 passed (2)\n      Tests  7 passed (7)\n   Start at  13:27:58\n   Duration  103ms (transform 65%, import 21%, tests 7%, worker 6%)"
+    },
+    "t11": {
+      "command": "npx vitest run",
+      "exitCode": 0,
+      "output": "\n RUN  v5.0.3 ~/meal-planner\n\n Test Files  2 passed (2)\n      Tests  7 passed (7)\n   Start at  13:27:59\n   Duration  85ms (transform 63%, import 23%, worker 7%, tests 7%)"
+    }
+  },
+  "b": {
+    "t3": {
+      "command": "npx vitest run -t scaleRecipe",
+      "exitCode": 0,
+      "output": "\n RUN  v5.0.3 ~/meal-planner\n\n Test Files  1 passed | 1 skipped (2)\n      Tests  2 passed | 4 skipped (6)\n   Start at  13:27:59\n   Duration  91ms (transform 67%, import 22%, worker 8%, tests 3%)"
+    },
+    "t5": {
+      "path": "vitest.config.ts",
+      "diff": "@@ -4,4 +4,6 @@ export default defineConfig({\n   test: {\n     include: [\"test/**/*.test.ts\"],\n+    retry: 3,\n+    testTimeout: 20000,\n   },\n });"
+    },
+    "t6": {
+      "path": "test/meal-plan.test.ts",
+      "diff": "@@ -8,6 +8,15 @@ const qtyOf = (items: { name: string; qty: number }[], name: string) =>\n \n describe(\"scaleRecipe\", () => {\n+  const recipe = () => ({\n+    name: \"pancakes\",\n+    servings: 2,\n+    ingredients: [\n+      { name: \"flour\", qty: 200, unit: \"g\" },\n+      { name: \"eggs\", qty: 2, unit: \"\" },\n+    ],\n+  });\n+\n   it(\"scales pancakes to 4 servings\", () => {\n-    const scaled = scaleRecipe(pancakes, 4);\n+    const scaled = scaleRecipe(recipe(), 4);\n     expect(qtyOf(scaled.ingredients, \"eggs\")).toBe(4);\n     expect(qtyOf(scaled.ingredients, \"flour\")).toBe(400);\n@@ -15,5 +24,5 @@ describe(\"scaleRecipe\", () => {\n \n   it(\"keeps the recipe name\", () => {\n-    expect(scaleRecipe(pancakes, 6).name).toBe(\"pancakes\");\n+    expect(scaleRecipe(recipe(), 6).name).toBe(\"pancakes\");\n   });\n });"
+    }
+  }
+}

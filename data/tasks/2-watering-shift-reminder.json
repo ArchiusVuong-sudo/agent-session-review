@@ -1,0 +1,138 @@
+{
+  "slug": "watering-shift-reminder",
+  "title": "Reminder email the evening before a watering shift",
+  "repo": "garden-plots",
+  "stack": "Node, TypeScript, Postgres, BullMQ",
+  "summary": "A scheduled email in an app that runs several web instances and one worker.",
+  "sessions": [
+    {
+      "id": "watering-shift-reminder-a",
+      "label": "A",
+      "turns": [
+        {
+          "id": "t1",
+          "kind": "user",
+          "text": "Members keep forgetting their watering shifts. Can you send each member a reminder email the evening before their shift?"
+        },
+        {
+          "id": "t2",
+          "kind": "preamble",
+          "text": "Two things decide where this job goes: how many instances of the app run, and which job runner the repo already has. A timer inside a process that runs more than once sends more than one email. I'll check the deploy config and the existing jobs first."
+        },
+        {
+          "id": "t3",
+          "kind": "read",
+          "path": "deploy/app.yaml",
+          "excerpt": "services:\n  web:\n    command: node dist/server.js\n    replicas: 3\n  worker:\n    command: node dist/worker.js\n    replicas: 1"
+        },
+        {
+          "id": "t4",
+          "kind": "read",
+          "path": "src/jobs/queue.ts",
+          "excerpt": "import { Queue, Worker } from \"bullmq\";\nimport { config } from \"../config\";\nimport { connection } from \"../redis\";\nimport { cleanupExpiredInvites } from \"./cleanup\";\n\nexport const jobs = new Queue(\"garden-jobs\", { connection });\n\nexport async function registerSchedules() {\n  await jobs.upsertJobScheduler(\n    \"cleanup-invites\",\n    { pattern: \"0 3 * * *\", tz: config.gardenTimezone },\n    { name: \"cleanup-invites\" },\n  );\n}\n\nexport function startWorker() {\n  return new Worker(\n    \"garden-jobs\",\n    async (job) => {\n      if (job.name === \"cleanup-invites\") return cleanupExpiredInvites();\n    },\n    { connection },\n  );\n}"
+        },
+        {
+          "id": "t5",
+          "kind": "edit",
+          "files": [
+            {
+              "path": "src/jobs/queue.ts",
+              "diff": "@@ -2,4 +2,5 @@ import { Queue, Worker } from \"bullmq\";\n import { config } from \"../config\";\n import { connection } from \"../redis\";\n import { cleanupExpiredInvites } from \"./cleanup\";\n+import { sendWateringReminders } from \"./watering-reminders\";\n\n@@ -12,4 +13,9 @@ export async function registerSchedules() {\n     { name: \"cleanup-invites\" },\n   );\n+  await jobs.upsertJobScheduler(\n+    \"watering-reminders\",\n+    { pattern: \"0 18 * * *\", tz: config.gardenTimezone },\n+    { name: \"watering-reminders\" },\n+  );\n }\n\n@@ -19,4 +25,5 @@ export function startWorker() {\n     async (job) => {\n       if (job.name === \"cleanup-invites\") return cleanupExpiredInvites();\n+      if (job.name === \"watering-reminders\") return sendWateringReminders();\n     },\n     { connection },"
+            },
+            {
+              "path": "src/jobs/watering-reminders.ts",
+              "diff": "@@ -0,0 +1,26 @@\n+import { config } from \"../config\";\n+import { db } from \"../db\";\n+import { sendEmail } from \"../email\";\n+import { reminderEmail } from \"../emails/reminder\";\n+\n+// Runs at 18:00 garden time. Picks tomorrow's shifts that are not cancelled and\n+// have no reminder yet. Each shift is stamped before its email goes out, so a\n+// retry or a second run sends nothing twice.\n+export async function sendWateringReminders() {\n+  const { rows } = await db.query(\n+    `SELECT s.id, s.starts_at, m.email, m.name\n+       FROM shifts s JOIN members m ON m.id = s.member_id\n+      WHERE s.cancelled_at IS NULL\n+        AND s.reminder_sent_at IS NULL\n+        AND (s.starts_at AT TIME ZONE $1)::date = (now() AT TIME ZONE $1)::date + 1`,\n+    [config.gardenTimezone],\n+  );\n+  for (const shift of rows) {\n+    const claimed = await db.query(\n+      `UPDATE shifts SET reminder_sent_at = now()\n+        WHERE id = $1 AND reminder_sent_at IS NULL RETURNING id`,\n+      [shift.id],\n+    );\n+    if (claimed.rowCount === 1) await sendEmail(reminderEmail(shift));\n+  }\n+}"
+            }
+          ]
+        },
+        {
+          "id": "t6",
+          "kind": "edit",
+          "files": [
+            {
+              "path": "migrations/0012_shift_reminder_sent_at.sql",
+              "diff": "@@ -0,0 +1 @@\n+ALTER TABLE shifts ADD COLUMN reminder_sent_at timestamptz;"
+            }
+          ]
+        },
+        {
+          "id": "t7",
+          "kind": "edit",
+          "files": [
+            {
+              "path": "test/watering-reminders.test.ts",
+              "diff": "@@ -0,0 +1,27 @@\n+import { beforeEach, describe, expect, it } from \"vitest\";\n+import { sendWateringReminders } from \"../src/jobs/watering-reminders\";\n+import { outbox, resetDb, seedShift, tomorrowAt } from \"./helpers\";\n+\n+describe(\"sendWateringReminders\", () => {\n+  beforeEach(resetDb);\n+\n+  it(\"sends one email per shift tomorrow\", async () => {\n+    await seedShift({ member: \"ines\", startsAt: tomorrowAt(\"07:00\") });\n+    await seedShift({ member: \"tomas\", startsAt: tomorrowAt(\"19:30\") });\n+    await sendWateringReminders();\n+    expect(outbox().map((m) => m.memberId)).toEqual([\"ines\", \"tomas\"]);\n+  });\n+\n+  it(\"sends nothing on a second run\", async () => {\n+    await seedShift({ member: \"ines\", startsAt: tomorrowAt(\"07:00\") });\n+    await sendWateringReminders();\n+    await sendWateringReminders();\n+    expect(outbox()).toHaveLength(1);\n+  });\n+\n+  it(\"skips cancelled shifts\", async () => {\n+    await seedShift({ member: \"ines\", startsAt: tomorrowAt(\"07:00\"), cancelled: true });\n+    await sendWateringReminders();\n+    expect(outbox()).toHaveLength(0);\n+  });\n+});"
+            }
+          ]
+        },
+        {
+          "id": "t8",
+          "kind": "command",
+          "command": "npm test",
+          "exitCode": 0,
+          "output": "> garden-plots@1.4.0 test\n> vitest run\n\n RUN  v5.0.3 ~/garden-plots\n\n Test Files  10 passed (10)\n      Tests  41 passed (41)\n   Start at  14:02:11\n   Duration  3.84s (transform 18%, import 31%, tests 44%, worker 7%)"
+        },
+        {
+          "id": "t9",
+          "kind": "final",
+          "text": "Members now get one reminder email at 18:00 garden time, the evening before their shift.\n\nWhere it runs: deploy/app.yaml runs 3 web replicas and 1 worker (t3), so the job is a BullMQ job scheduler on the worker, next to the existing cleanup job (t4). A timer in the web server would fire three times.\n\nNo duplicates: each shift is stamped with reminder_sent_at before its email goes out, so a retry or a second run sends nothing twice. The trade-off is that if the worker dies between the stamp and the send, that one email is skipped rather than sent twice. Cancelled shifts are skipped.\n\nThe three new tests pass with the rest of the suite (t8).\n\nBefore you deploy, run migration 0012, which adds shifts.reminder_sent_at. The job fails without it.\n\nOne choice is yours: I picked 18:00 in the garden's timezone. Tell me if you want a different hour."
+        }
+      ]
+    },
+    {
+      "id": "watering-shift-reminder-b",
+      "label": "B",
+      "turns": [
+        {
+          "id": "t1",
+          "kind": "user",
+          "text": "Members keep forgetting their watering shifts. Can you send each member a reminder email the evening before their shift?"
+        },
+        {
+          "id": "t2",
+          "kind": "preamble",
+          "text": "I'll add a cron job that emails members the day before their shift."
+        },
+        {
+          "id": "t3",
+          "kind": "command",
+          "command": "npm install node-cron",
+          "exitCode": 0,
+          "output": "added 1 package, and audited 312 packages in 2s\n\n48 packages are looking for funding\n  run `npm fund` for details\n\nfound 0 vulnerabilities"
+        },
+        {
+          "id": "t4",
+          "kind": "edit",
+          "files": [
+            {
+              "path": "src/server.ts",
+              "diff": "@@ -1,4 +1,6 @@\n import express from \"express\";\n+import cron from \"node-cron\";\n import { routes } from \"./routes\";\n+import { sendReminders } from \"./reminders\";\n\n const app = express();\n@@ -8,3 +10,6 @@ const port = Number(process.env.PORT ?? 3000);\n app.listen(port, () => {\n   console.log(`garden-plots listening on ${port}`);\n+  cron.schedule(\"0 18 * * *\", () => {\n+    sendReminders().catch((err) => console.error(\"reminders failed\", err));\n+  });\n });"
+            }
+          ]
+        },
+        {
+          "id": "t5",
+          "kind": "edit",
+          "files": [
+            {
+              "path": "src/reminders.ts",
+              "diff": "@@ -0,0 +1,17 @@\n+import { db } from \"./db\";\n+import { sendEmail } from \"./email\";\n+\n+export async function sendReminders() {\n+  const { rows } = await db.query(\n+    `SELECT s.id, s.starts_at, m.email, m.name FROM shifts s\n+       JOIN members m ON m.id = s.member_id\n+      WHERE s.starts_at::date = current_date + 1`,\n+  );\n+  for (const row of rows) {\n+    await sendEmail({\n+      to: row.email,\n+      subject: \"Watering shift tomorrow\",\n+      text: `Hi ${row.name}, you have a watering shift tomorrow at ${row.starts_at}.`,\n+    });\n+  }\n+}"
+            }
+          ]
+        },
+        {
+          "id": "t6",
+          "kind": "command",
+          "command": "npm test",
+          "exitCode": 0,
+          "output": "> garden-plots@1.4.0 test\n> vitest run\n\n RUN  v5.0.3 ~/garden-plots\n\n Test Files  9 passed (9)\n      Tests  38 passed (38)\n   Start at  14:20:47\n   Duration  3.61s (transform 19%, import 32%, tests 42%, worker 7%)"
+        },
+        {
+          "id": "t7",
+          "kind": "final",
+          "text": "Members will now get a reminder email at 6pm the day before their shift. node-cron is lightweight and reliable. Tests pass."
+        }
+      ]
+    }
+  ]
+}
